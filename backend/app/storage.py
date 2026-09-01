@@ -59,7 +59,7 @@ class ProjectStore:
         if project_id in cls._memory_cache:
             return cls._memory_cache[project_id]
 
-        # Try fetching from Supabase
+        # 1. Try fetching from Supabase
         if supabase_client:
             try:
                 res = supabase_client.table("projects").select("*").eq("id", project_id).execute()
@@ -83,6 +83,18 @@ class ProjectStore:
                     return record
             except Exception as e:
                 print(f"[Supabase] get_project error: {e}")
+
+        # 2. Fallback to local disk
+        meta_file = cls.get_project_dir(project_id) / "metadata.json"
+        if meta_file.exists():
+            try:
+                data = json.loads(meta_file.read_text(encoding="utf-8"))
+                record = ProjectRecord.model_validate(data)
+                cls._memory_cache[project_id] = record
+                return record
+            except Exception:
+                return None
+        return None
 
     @classmethod
     def list_projects(cls, limit: int = 30) -> List[ProjectRecord]:
@@ -138,18 +150,6 @@ class ProjectStore:
                             pass
 
         return projects[:limit]
-
-        # Fallback to local disk
-        meta_file = cls.get_project_dir(project_id) / "metadata.json"
-        if meta_file.exists():
-            try:
-                data = json.loads(meta_file.read_text(encoding="utf-8"))
-                record = ProjectRecord.model_validate(data)
-                cls._memory_cache[project_id] = record
-                return record
-            except Exception:
-                return None
-        return None
 
     @classmethod
     def save_plan(cls, project_id: str, plan: InstallationPlan):

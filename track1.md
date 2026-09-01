@@ -272,6 +272,16 @@ d:\onecommandSite\
 
 ---
 
+### 2026-09-01 — Project Storage Disk Fallback Fix
+
+**Bug**: `GET /api/projects/{id}` returned 404 for projects when the memory cache had restarted and Supabase had not cached the record, due to `list_projects` blocking the local disk fallback path in [`backend/app/storage.py`](file:///d:/onecommandSite/backend/app/storage.py).
+
+**Fix**:
+- Re-structured `ProjectStore.get_project()` to cleanly fall back to `storage/{id}/metadata.json` on local disk when memory/Supabase lookups return None.
+- Verified project retrieval via unit tests and direct disk lookup: 100% success.
+
+---
+
 ## Supabase Setup Instructions (SQL Editor)
 
 Run the following SQL snippet in your Supabase project's **SQL Editor**:
