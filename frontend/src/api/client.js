@@ -2,7 +2,12 @@
  * API client for interacting with the One-Command backend.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+let envBase = (import.meta.env.VITE_API_BASE || '').trim();
+// Auto-correct legacy mistyped domain
+if (envBase.includes('onecommand-api.onrender.com')) {
+  envBase = 'https://onecommandprompt.onrender.com';
+}
+const API_BASE = envBase || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://onecommandprompt.onrender.com' : '');
 
 // Directories to skip during folder uploads
 const IGNORED_DIRS = ['.git', '__pycache__', '.pytest_cache', '.mypy_cache',
