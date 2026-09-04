@@ -13,15 +13,30 @@ app = FastAPI(
 )
 
 
+# Explicitly Whitelisted Domains
+DEFAULT_ALLOWED_ORIGINS = [
+    "https://onecommand-prompt.vercel.app",
+    "https://onecommand-prompt-p46rlx72v-shadowknight098s-projects.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
+env_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]
+ALLOWED_ORIGINS = env_origins if env_origins else DEFAULT_ALLOWED_ORIGINS + ["*"]
+
+
 # Global Middleware: Explicitly inject CORS headers on EVERY response (including errors & preflight)
 @app.middleware("http")
 async def add_cors_headers(request: Request, call_next):
-    origin = request.headers.get("origin", "*")
+    origin = request.headers.get("origin") or "*"
     if request.method == "OPTIONS":
         response = Response(status_code=200)
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
         response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true" if origin != "*" else "false"
         response.headers["Access-Control-Max-Age"] = "86400"
         return response
 
@@ -38,20 +53,17 @@ async def add_cors_headers(request: Request, call_next):
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
     response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Expose-Headers"] = "*"
+    if origin != "*":
+        response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 
 # Standard Starlette CORS middleware
-allowed_origins = os.environ.get("CORS_ORIGINS", "").split(",")
-allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
-if not allowed_origins:
-    allowed_origins = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=r"^https?://.*",
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
