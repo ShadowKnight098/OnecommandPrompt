@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://onecommand-api.onrender.com/api/:path*" },
-    { "source": "/i/:path*", "destination": "https://onecommand-api.onrender.com/i/:path*" }
+    { "source": "/api/:path*", "destination": "https://onecommandprompt.onrender.com/api/:path*" },
+    { "source": "/i/:path*", "destination": "https://onecommandprompt.onrender.com/i/:path*" }
   ]
 }
