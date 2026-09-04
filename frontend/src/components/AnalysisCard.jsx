@@ -60,15 +60,21 @@ export default function AnalysisCard({
 
       {/* Grid of Analysis Metadata */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-        {/* Runtime */}
+        {/* Runtime / Platform */}
         <div className="p-4 rounded-lg bg-ink-50/60 border border-ink-200 flex items-start gap-3.5">
           <div className="w-9 h-9 rounded-md bg-white border border-ink-200 text-ink-900 flex items-center justify-center shrink-0 shadow-paper-sm">
             <Terminal className="w-4 h-4" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-ink-500 font-medium font-sans">Python Runtime</p>
-            <p className="text-sm font-semibold text-ink-950 font-mono mt-0.5">{analysis.python_requirement}</p>
-            <p className="text-xs text-ink-500 mt-1 font-sans">Checked on target machine before setup</p>
+            <p className="text-xs text-ink-500 font-medium font-sans">
+              {analysis.project_type === 'static_html' ? 'Web Server Runtime' : (analysis.language === 'javascript' || analysis.language === 'typescript' || analysis.project_type === 'vite' || analysis.project_type === 'react' || analysis.project_type === 'nextjs' ? 'Node.js Runtime' : (analysis.project_type === 'fullstack' ? 'Full-Stack Runtimes' : 'Python Runtime'))}
+            </p>
+            <p className="text-sm font-semibold text-ink-950 font-mono mt-0.5">
+              {analysis.project_type === 'static_html' ? 'Zero-Config Local HTTP (8080)' : (analysis.node_requirement || analysis.python_requirement)}
+            </p>
+            <p className="text-xs text-ink-500 mt-1 font-sans">
+              {analysis.project_type === 'static_html' ? 'Self-hosting static assets with live browser launch' : 'Auto-detected & verified before installation'}
+            </p>
           </div>
         </div>
 
@@ -83,7 +89,7 @@ export default function AnalysisCard({
               {analysis.candidate_entry_points.length > 1 && (
                 <button
                   onClick={onOpenEntrypointSelector}
-                  className="text-xs text-accent-blue hover:text-blue-800 font-medium flex items-center gap-1 font-sans"
+                  className="text-xs text-accent-blue hover:text-blue-800 font-medium flex items-center gap-1 font-sans cursor-pointer"
                 >
                   <SlidersHorizontal className="w-3 h-3" />
                   Change
@@ -92,9 +98,9 @@ export default function AnalysisCard({
             </div>
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-sm font-semibold text-ink-950 font-mono">{analysis.entry_point || 'None detected'}</p>
-              {analysis.entry_point_framework && (
+              {(analysis.entry_point_framework || analysis.project_type) && (
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-ink-200 text-ink-800 font-semibold">
-                  {analysis.entry_point_framework}
+                  {analysis.entry_point_framework || analysis.project_type}
                 </span>
               )}
             </div>
@@ -114,10 +120,10 @@ export default function AnalysisCard({
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-ink-500 font-medium font-sans">Dependencies</p>
+              <p className="text-xs text-ink-500 font-medium font-sans">Dependencies & Packages</p>
               <button
                 onClick={onOpenDependencies}
-                className="text-xs text-accent-blue hover:text-blue-800 font-medium flex items-center gap-1 font-sans"
+                className="text-xs text-accent-blue hover:text-blue-800 font-medium flex items-center gap-1 font-sans cursor-pointer"
               >
                 <SlidersHorizontal className="w-3 h-3" />
                 Review ({enabledDepsCount})
@@ -132,11 +138,11 @@ export default function AnalysisCard({
                   ? 'bg-amber-50 text-amber-900 border-amber-200' 
                   : 'bg-emerald-50 text-emerald-900 border-emerald-200'
               }`}>
-                {isInferred ? 'AST Inferred' : 'requirements.txt'}
+                {analysis.dependency_source || (isInferred ? 'AST Inferred' : 'Manifest')}
               </span>
             </div>
             <p className="text-xs text-ink-500 mt-1 font-sans">
-              {isInferred ? 'Derived from import statements' : 'Explicitly declared dependencies'}
+              {isInferred ? 'Derived from import statements' : 'Resolved package dependencies'}
             </p>
           </div>
         </div>
@@ -155,10 +161,49 @@ export default function AnalysisCard({
             <p className="text-sm font-semibold text-ink-950 font-sans mt-0.5">
               {hasSecurityWarnings ? `${analysis.security_warnings.length} Advisory Notice` : 'Verified Safe'}
             </p>
-            <p className="text-xs text-ink-500 mt-1 font-sans">Zip-Slip protected • Isolated in virtualenv</p>
+            <p className="text-xs text-ink-500 mt-1 font-sans">Sandboxed runtime • Path traversal protected</p>
           </div>
         </div>
       </div>
+
+      {/* Web & Frontend Inspection Details (if available) */}
+      {analysis.web_metadata && (
+        <div className="mb-6 p-4 rounded-lg bg-indigo-50/60 border border-indigo-200 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-indigo-950 uppercase tracking-wider font-sans flex items-center gap-1.5">
+              <span>Frontend & Web Assets</span>
+            </span>
+            {analysis.web_metadata.target_port && (
+              <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-900 border border-indigo-300">
+                Port: {analysis.web_metadata.target_port}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-sans text-indigo-900">
+            {analysis.web_metadata.html_title && (
+              <div>
+                <span className="font-semibold text-indigo-950">Page Title:</span> {analysis.web_metadata.html_title}
+              </div>
+            )}
+            {analysis.web_metadata.dev_command && (
+              <div>
+                <span className="font-semibold text-indigo-950">Launch Command:</span> <code className="font-mono bg-indigo-100 px-1.5 py-0.5 rounded text-[11px]">{analysis.web_metadata.dev_command}</code>
+              </div>
+            )}
+            {analysis.web_metadata.cdn_libraries && analysis.web_metadata.cdn_libraries.length > 0 && (
+              <div className="sm:col-span-2">
+                <span className="font-semibold text-indigo-950">Detected CDN Libraries:</span>{' '}
+                {analysis.web_metadata.cdn_libraries.map((lib, idx) => (
+                  <span key={idx} className="inline-block mr-1.5 px-2 py-0.5 rounded-full bg-white border border-indigo-200 font-mono text-[10px] text-indigo-800">
+                    {lib}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Warnings Banner if any */}
       {analysis.warnings && analysis.warnings.length > 0 && (

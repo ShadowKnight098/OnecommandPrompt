@@ -4,9 +4,10 @@ from pydantic import BaseModel, Field
 
 
 class RuntimeConfig(BaseModel):
-    type: str = "python"
+    type: str = "python"  # "python", "node", "static_web", "fullstack"
     version: str = ">=3.10"
     target_install_version: str = "3.12"
+    node_version: Optional[str] = None
 
 
 class ProjectDownloadConfig(BaseModel):
@@ -17,14 +18,17 @@ class ProjectDownloadConfig(BaseModel):
 
 
 class EnvironmentConfig(BaseModel):
-    type: str = "venv"
+    type: str = "venv"  # "venv", "node_modules", "static", "fullstack"
     path: str = ".venv"
+    package_manager: str = "npm"  # "npm", "pnpm", "yarn", "bun", "pip"
 
 
 class EntryPointConfig(BaseModel):
-    command_type: str = "python"  # "python", "streamlit", "uvicorn", "flask"
+    command_type: str = "python"  # "python", "streamlit", "uvicorn", "flask", "npm_dev", "npm_start", "static_http", "fullstack"
     entry_file: str
     run_command: str
+    target_port: Optional[int] = None
+    open_browser: bool = True
 
 
 class InstallationPlan(BaseModel):

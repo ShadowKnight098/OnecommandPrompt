@@ -141,12 +141,42 @@ async def generate_installers(project_id: str, request: Request, payload: Genera
         if d.enabled
     ]
 
+    # Determine runtime type and commands
+    ptype = analysis.project_type.lower() if analysis.project_type else "python"
+    web_meta = analysis.web_metadata
+
+    if ptype in ["react", "vite", "nextjs", "vue", "svelte", "nodejs"]:
+        runtime_type = "node"
+        env_type = "node_modules"
+        pkg_manager = web_meta.package_manager if web_meta else "npm"
+        dev_cmd = (web_meta and web_meta.dev_command) or "npm run dev"
+        target_port = (web_meta and web_meta.target_port) or 5173
+    elif ptype in ["static_html", "html"]:
+        runtime_type = "static_web"
+        env_type = "static"
+        pkg_manager = "none"
+        dev_cmd = (web_meta and web_meta.dev_command) or "python -m http.server 8080"
+        target_port = (web_meta and web_meta.target_port) or 8080
+    elif ptype in ["fullstack"]:
+        runtime_type = "fullstack"
+        env_type = "fullstack"
+        pkg_manager = (web_meta and web_meta.package_manager) or "npm"
+        dev_cmd = "python main.py"
+        target_port = 8000
+    else:
+        runtime_type = "python"
+        env_type = "venv"
+        pkg_manager = "pip"
+        dev_cmd = f"python {entry_point}"
+        target_port = None
+
     plan = InstallationPlan(
         project_id=project_id,
         project_name=analysis.project_name,
         runtime=RuntimeConfig(
-            type="python",
+            type=runtime_type,
             version=py_req,
+            node_version=web_meta.node_requirement if web_meta else None,
         ),
         project=ProjectDownloadConfig(
             project_id=project_id,
@@ -155,15 +185,17 @@ async def generate_installers(project_id: str, request: Request, payload: Genera
             target_directory_name=analysis.project_name,
         ),
         environment=EnvironmentConfig(
-            type="venv",
-            path=".venv",
+            type=env_type,
+            path=".venv" if runtime_type in ["python", "fullstack"] else "node_modules",
+            package_manager=pkg_manager,
         ),
         dependencies_source=analysis.dependency_source,
         dependencies=clean_deps,
         entrypoint=EntryPointConfig(
-            command_type=analysis.entry_point_framework or "python",
+            command_type=analysis.entry_point_framework or runtime_type,
             entry_file=entry_point,
-            run_command=f"python {entry_point}",
+            run_command=dev_cmd,
+            target_port=target_port,
         ),
     )
 

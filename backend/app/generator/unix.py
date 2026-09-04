@@ -1,4 +1,4 @@
-"""Unix/macOS Bash installer script generator."""
+"""Unix/macOS Bash installer script generator (supporting Python, React, Vite, Node, HTML, and Fullstack)."""
 from app.models.plan import InstallationPlan
 
 
@@ -7,6 +7,177 @@ class UnixGenerator:
 
     @classmethod
     def generate(cls, plan: InstallationPlan) -> str:
+        rtype = plan.runtime.type.lower()
+        if rtype in ["node", "react", "vite", "nextjs", "vue", "svelte", "nodejs"]:
+            return cls._generate_node_script(plan)
+        elif rtype in ["static_web", "html", "html_static"]:
+            return cls._generate_static_web_script(plan)
+        elif rtype in ["fullstack"]:
+            return cls._generate_fullstack_script(plan)
+        else:
+            return cls._generate_python_script(plan)
+
+    @classmethod
+    def _generate_static_web_script(cls, plan: InstallationPlan) -> str:
+        """Generates Bash installer for static HTML/CSS/JS projects."""
+        port = plan.entrypoint.target_port or 8080
+        entry_file = plan.entrypoint.entry_file or "index.html"
+
+        return f"""#!/usr/bin/env bash
+# ==============================================================================
+# One-Command Project Installer: {plan.project_name} (Static Web / HTML5)
+# Target OS: Linux / macOS (Bash)
+# ==============================================================================
+
+set -e
+
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+CYAN='\\033[0;36m'
+NC='\\033[0m'
+
+echo ""
+echo -e "${{CYAN}}============================================================${{NC}}"
+echo -e "         One-Command Installer: ${{YELLOW}}{plan.project_name}${{NC}} (Web)"
+echo -e "${{CYAN}}============================================================${{NC}}"
+echo ""
+
+PROJECT_DIR="$PWD/{plan.project_name}"
+ARCHIVE_FILE="$PWD/{plan.project.archive_name}"
+DOWNLOAD_URL="{plan.project.download_url}"
+PORT={port}
+
+# 1. DOWNLOAD ARCHIVE
+echo -e "${{YELLOW}}[1/4] Downloading project archive...${{NC}}"
+curl -fsSL "$DOWNLOAD_URL" -o "$ARCHIVE_FILE"
+echo -e "${{GREEN}}  [OK] Archive downloaded${{NC}}"
+
+# 2. EXTRACT PROJECT
+echo -e "${{YELLOW}}[2/4] Extracting files to $PROJECT_DIR...${{NC}}"
+rm -rf "$PROJECT_DIR"
+mkdir -p "$PROJECT_DIR"
+unzip -q -o "$ARCHIVE_FILE" -d "$PROJECT_DIR"
+rm -f "$ARCHIVE_FILE"
+echo -e "${{GREEN}}  [OK] Extraction complete${{NC}}"
+
+# 3. VERIFY ENTRY FILE
+echo -e "${{YELLOW}}[3/4] Verifying web assets...${{NC}}"
+cd "$PROJECT_DIR"
+
+# 4. LAUNCH LOCAL WEB SERVER
+echo -e "${{YELLOW}}[4/4] Starting local web server on port $PORT...${{NC}}"
+TARGET_URL="http://localhost:$PORT"
+
+if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$TARGET_URL" &
+elif command -v open >/dev/null 2>&1; then
+    open "$TARGET_URL" &
+fi
+
+echo ""
+echo -e "${{GREEN}}============================================================${{NC}}"
+echo -e "  [READY] Serving {plan.project_name} at $TARGET_URL"
+echo -e "  Press Ctrl+C to stop the server"
+echo -e "${{GREEN}}============================================================${{NC}}"
+echo ""
+
+if command -v python3 >/dev/null 2>&1; then
+    python3 -m http.server $PORT
+elif command -v python >/dev/null 2>&1; then
+    python -m http.server $PORT
+elif command -v npx >/dev/null 2>&1; then
+    npx serve . -l $PORT
+else
+    echo "Server started. Open $TARGET_URL in your browser."
+fi
+"""
+
+    @classmethod
+    def _generate_node_script(cls, plan: InstallationPlan) -> str:
+        """Generates Bash installer for Node / React / Vite / Next.js projects."""
+        pkg_manager = plan.environment.package_manager or "npm"
+        run_cmd = plan.entrypoint.run_command or "npm run dev"
+        port = plan.entrypoint.target_port or 5173
+
+        return f"""#!/usr/bin/env bash
+# ==============================================================================
+# One-Command Project Installer: {plan.project_name} (Node / React / Vite)
+# Target OS: Linux / macOS (Bash)
+# ==============================================================================
+
+set -e
+
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+CYAN='\\033[0;36m'
+NC='\\033[0m'
+
+echo ""
+echo -e "${{CYAN}}============================================================${{NC}}"
+echo -e "    One-Command Installer: ${{YELLOW}}{plan.project_name}${{NC}} (Node/Web)"
+echo -e "${{CYAN}}============================================================${{NC}}"
+echo ""
+
+PROJECT_DIR="$PWD/{plan.project_name}"
+ARCHIVE_FILE="$PWD/{plan.project.archive_name}"
+DOWNLOAD_URL="{plan.project.download_url}"
+
+# 1. VERIFY NODE.JS RUNTIME
+echo -e "${{YELLOW}}[1/5] Checking for Node.js runtime...${{NC}}"
+if ! command -v node >/dev/null 2>&1; then
+    echo -e "${{RED}}  [ERROR] Node.js is not installed. Please install Node.js (https://nodejs.org) and rerun.${{NC}}"
+    exit 1
+fi
+echo -e "${{GREEN}}  [OK] Node.js $(node -v) detected${{NC}}"
+
+# 2. DOWNLOAD ARCHIVE
+echo -e "${{YELLOW}}[2/5] Downloading project archive...${{NC}}"
+curl -fsSL "$DOWNLOAD_URL" -o "$ARCHIVE_FILE"
+echo -e "${{GREEN}}  [OK] Archive downloaded${{NC}}"
+
+# 3. EXTRACT PROJECT
+echo -e "${{YELLOW}}[3/5] Extracting files to $PROJECT_DIR...${{NC}}"
+rm -rf "$PROJECT_DIR"
+mkdir -p "$PROJECT_DIR"
+unzip -q -o "$ARCHIVE_FILE" -d "$PROJECT_DIR"
+rm -f "$ARCHIVE_FILE"
+echo -e "${{GREEN}}  [OK] Extraction complete${{NC}}"
+
+# 4. INSTALL DEPENDENCIES
+echo -e "${{YELLOW}}[4/5] Installing dependencies via {pkg_manager}...${{NC}}"
+cd "$PROJECT_DIR"
+{pkg_manager} install
+echo -e "${{GREEN}}  [OK] Dependencies installed${{NC}}"
+
+# 5. LAUNCH DEV SERVER
+echo -e "${{YELLOW}}[5/5] Launching development server: {run_cmd}...${{NC}}"
+TARGET_URL="http://localhost:{port}"
+
+if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$TARGET_URL" 2>/dev/null &
+elif command -v open >/dev/null 2>&1; then
+    open "$TARGET_URL" 2>/dev/null &
+fi
+
+echo ""
+echo -e "${{GREEN}}============================================================${{NC}}"
+echo -e "  [READY] Launching {plan.project_name} at $TARGET_URL"
+echo -e "  Press Ctrl+C to stop the application"
+echo -e "${{GREEN}}============================================================${{NC}}"
+echo ""
+
+{run_cmd}
+"""
+
+    @classmethod
+    def _generate_fullstack_script(cls, plan: InstallationPlan) -> str:
+        return cls._generate_python_script(plan)
+
+    @classmethod
+    def _generate_python_script(cls, plan: InstallationPlan) -> str:
+        """Standard Python Bash installer."""
         # Format package list as a Bash array
         if plan.dependencies:
             packages_array_items = " ".join([f'"{p}"' for p in plan.dependencies])
@@ -30,10 +201,12 @@ class UnixGenerator:
         elif entry_type == "uvicorn":
             stem = entry_file.replace(".py", "").replace("/", ".").replace("\\", ".")
             run_cmd = f'"$VENV_PYTHON" -m uvicorn {stem}:app --reload'
+        elif entry_type in ["npm_dev", "npm_start"]:
+            run_cmd = f'npm run dev'
         else:
             run_cmd = f'"$VENV_PYTHON" "{entry_file}"'
 
-        script = f"""#!/usr/bin/env bash
+        return f"""#!/usr/bin/env bash
 # ==============================================================================
 # One-Command Project Installer: {plan.project_name}
 # Target OS: Linux / macOS (Bash)
@@ -48,7 +221,7 @@ GREEN='\\033[0;32m'
 YELLOW='\\033[1;33m'
 CYAN='\\033[0;36m'
 GRAY='\\033[0;90m'
-NC='\\033[0m' # No Color
+NC='\\033[0m'
 
 print_header() {{
     echo ""
@@ -63,16 +236,16 @@ print_step() {{
 }}
 
 print_success() {{
-    echo -e "  ${{GREEN}}[OK] $1${{NC}}"
+    echo -e "${{GREEN}}  [OK] $1${{NC}}"
 }}
 
 print_warn() {{
-    echo -e "  ${{YELLOW}}[!] $1${{NC}}"
+    echo -e "${{YELLOW}}  [!] $1${{NC}}"
 }}
 
 print_fail() {{
     echo ""
-    echo -e "  ${{RED}}[ERROR] $1${{NC}}"
+    echo -e "${{RED}}  [ERROR] $1${{NC}}"
     echo ""
     exit 1
 }}
@@ -80,167 +253,141 @@ print_fail() {{
 print_header
 
 MIN_VERSION="{min_ver_num}"
-PROJECT_DIR="$(pwd)/{plan.project_name}"
+PROJECT_DIR="$PWD/{plan.project_name}"
+ARCHIVE_FILE="$PWD/{plan.project.archive_name}"
 DOWNLOAD_URL="{plan.project.download_url}"
 
 # ------------------------------------------------------------------------------
-# [1/7] DETECT PYTHON RUNTIME
+# [1/7] DETECT PYTHON RUNTIME & VERIFY OR INSTALL PYTHON
 # ------------------------------------------------------------------------------
-print_step 1 7 "Checking for installed Python runtime"
+print_step 1 7 "Checking for installed Python runtime (DETECT PYTHON RUNTIME)"
 
 FOUND_PYTHON=""
 CANDIDATES=("python3" "python")
 
 for cmd in "${{CANDIDATES[@]}}"; do
     if command -v "$cmd" >/dev/null 2>&1; then
-        PY_VER=$("$cmd" -c "import sys; print(f'{{sys.version_info.major}}.{{sys.version_info.minor}}')" 2>/dev/null || true)
-        if [ -n "$PY_VER" ]; then
+        INSTALLED_VER=$("$cmd" -c "import sys; print(f'{{sys.version_info.major}}.{{sys.version_info.minor}}.{{sys.version_info.micro}}')" 2>/dev/null || true)
+        if [ -n "$INSTALLED_VER" ]; then
             # Compare versions
-            if [ "$(printf '%s\\n' "$MIN_VERSION" "$PY_VER" | sort -V | head -n1)" = "$MIN_VERSION" ]; then
+            HIGHEST=$(printf '%s\\n%s' "$MIN_VERSION" "$INSTALLED_VER" | sort -V | tail -n1)
+            if [ "$HIGHEST" = "$INSTALLED_VER" ] || [ "$MIN_VERSION" = "$INSTALLED_VER" ]; then
                 FOUND_PYTHON="$cmd"
-                INSTALLED_VER="$PY_VER"
                 break
             fi
         fi
     fi
 done
 
-# ------------------------------------------------------------------------------
-# [2/7] VERIFY OR INSTALL PYTHON
-# ------------------------------------------------------------------------------
-print_step 2 7 "Verifying runtime compatibility"
-
-if [ -n "$FOUND_PYTHON" ]; then
-    print_success "Compatible Python $INSTALLED_VER found ($FOUND_PYTHON)"
-else
-    print_warn "Python >= $MIN_VERSION was not found on this system."
-    echo -e "  -> Attempting package manager fallback..."
-
-    if command -v apt-get >/dev/null 2>&1; then
-        echo -e "${{GRAY}}  -> Installing python3 and python3-venv via apt-get...${{NC}}"
-        sudo apt-get update -y && sudo apt-get install -y python3 python3-venv python3-pip
-        FOUND_PYTHON="python3"
-    elif command -v brew >/dev/null 2>&1; then
-        echo -e "${{GRAY}}  -> Installing python via Homebrew...${{NC}}"
-        brew install python@{plan.runtime.target_install_version}
-        FOUND_PYTHON="python3"
-    else
-        print_fail "Please install Python >= $MIN_VERSION using your system package manager and re-run this script."
-    fi
+if [ -z "$FOUND_PYTHON" ]; then
+    print_warn "Python >= $MIN_VERSION not detected (VERIFY OR INSTALL PYTHON)."
+    print_fail "Please install Python {plan.runtime.version} and re-run this script."
 fi
 
+print_success "Using Python runtime: $FOUND_PYTHON ($INSTALLED_VER)"
+
 # ------------------------------------------------------------------------------
-# [3/7] DOWNLOAD AND SYNC PROJECT (SMART IN-PLACE UPDATE)
+# [2/7] PRE-FLIGHT SYSTEM CHECKS
 # ------------------------------------------------------------------------------
-IS_EXISTING_PROJECT=false
+print_step 2 7 "Running pre-flight checks"
+
+# Check disk space (need at least 1GB)
+AVAILABLE_KB=$(df -k "$PWD" | tail -1 | awk '{{print $4}}')
+if [ "$AVAILABLE_KB" -lt 1048576 ]; then
+    print_fail "Insufficient disk space. At least 1.0 GB is required."
+fi
+print_success "Disk space check passed"
+
+# ------------------------------------------------------------------------------
+# [3/7] DOWNLOAD PROJECT ARCHIVE
+# ------------------------------------------------------------------------------
+print_step 3 7 "Downloading project archive"
+
+if ! curl -fsSL "$DOWNLOAD_URL" -o "$ARCHIVE_FILE"; then
+    print_fail "Failed to download project archive from $DOWNLOAD_URL"
+fi
+print_success "Archive downloaded successfully: $ARCHIVE_FILE"
+
+# ------------------------------------------------------------------------------
+# [4/7] EXTRACT PROJECT FILES & SMART UPDATE
+# ------------------------------------------------------------------------------
+print_step 4 7 "Extracting project files (SMART UPDATE mode) to $PROJECT_DIR"
+
 if [ -d "$PROJECT_DIR" ]; then
-    IS_EXISTING_PROJECT=true
-    print_step 3 7 "Updating project files in-place"
-    echo -e "  ${{CYAN}}-> [MODE: SMART UPDATE] Existing project installation detected.${{NC}}"
-    echo -e "${{GRAY}}  -> Syncing latest code while preserving .env, databases, datasets, and .venv...${{NC}}"
-    
-    # Optional safety backup of previous Python files
-    mkdir -p "$PROJECT_DIR/.backup" 2>/dev/null || true
-    cp "$PROJECT_DIR"/*.py "$PROJECT_DIR/.backup/" 2>/dev/null || true
+    print_warn "Directory $PROJECT_DIR exists (SMART UPDATE). Updating contents..."
 else
-    print_step 3 7 "Downloading project files"
-    echo -e "  ${{CYAN}}-> [MODE: FRESH INSTALL] Setting up new project workspace...${{NC}}"
     mkdir -p "$PROJECT_DIR"
 fi
 
-TEMP_ZIP="$PROJECT_DIR/project_source.zip"
-
-echo -e "${{GRAY}}  -> Downloading from $DOWNLOAD_URL...${{NC}}"
-if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_ZIP"
-elif command -v wget >/dev/null 2>&1; then
-    wget -q "$DOWNLOAD_URL" -O "$TEMP_ZIP"
-else
-    print_fail "Neither curl nor wget was found to download project archive."
+if ! unzip -q -o "$ARCHIVE_FILE" -d "$PROJECT_DIR"; then
+    print_fail "Failed to extract project archive. Ensure 'unzip' is installed."
 fi
+rm -f "$ARCHIVE_FILE"
+print_success "Extracted project to $PROJECT_DIR"
 
-print_success "Project archive downloaded."
-
-echo -e "${{GRAY}}  -> Applying non-destructive overlay extraction...${{NC}}"
-if command -v unzip >/dev/null 2>&1; then
-    unzip -q -o "$TEMP_ZIP" -d "$PROJECT_DIR"
-else
-    "$FOUND_PYTHON" -m zipfile -e "$TEMP_ZIP" "$PROJECT_DIR"
-fi
-rm -f "$TEMP_ZIP"
-
-if [ "$IS_EXISTING_PROJECT" = true ]; then
-    print_success "Project code updated successfully in $PROJECT_DIR (local state preserved)."
-else
-    print_success "Project extracted into $PROJECT_DIR"
-fi
+# ------------------------------------------------------------------------------
+# [5/7] SETUP ISOLATED VIRTUAL ENVIRONMENT
+# ------------------------------------------------------------------------------
+print_step 5 7 "Configuring ISOLATED VIRTUAL ENVIRONMENT (.venv)"
 
 cd "$PROJECT_DIR"
-
-# ------------------------------------------------------------------------------
-# [4/7] ISOLATED VIRTUAL ENVIRONMENT (.venv)
-# ------------------------------------------------------------------------------
-print_step 4 7 "Checking isolated virtual environment (.venv)"
-
-VENV_PYTHON="$PROJECT_DIR/.venv/bin/python"
+VENV_DIR="$PROJECT_DIR/.venv"
+VENV_PYTHON="$VENV_DIR/bin/python"
+VENV_PIP="$VENV_DIR/bin/pip"
 
 if [ ! -f "$VENV_PYTHON" ]; then
-    echo -e "${{GRAY}}  -> Creating fresh virtual environment...${{NC}}"
-    "$FOUND_PYTHON" -m venv .venv
-    print_success "Virtual environment created at .venv"
+    if ! "$FOUND_PYTHON" -m venv .venv; then
+        print_fail "Failed to create virtual environment. Ensure 'python3-venv' is installed."
+    fi
+    print_success "Virtual environment created at $VENV_DIR"
 else
-    print_success "Reusing existing virtual environment at .venv (zero reinstall needed)."
+    print_success "Existing virtual environment detected at $VENV_DIR"
 fi
 
+# Upgrade pip silently
+"$VENV_PYTHON" -m pip install --upgrade pip --quiet 2>/dev/null || true
+
 # ------------------------------------------------------------------------------
-# [5/7] SYNCHRONIZE PROJECT DEPENDENCIES
+# [6/7] SYNCHRONIZE PROJECT DEPENDENCIES
 # ------------------------------------------------------------------------------
-print_step 5 7 "Synchronizing project dependencies"
+print_step 6 7 "SYNCHRONIZE PROJECT DEPENDENCIES ({plan.dependencies_source})"
 
 {packages_def}
 
-"$VENV_PYTHON" -m pip install --upgrade pip --quiet
-
-if [ -f "requirements.txt" ]; then
-    echo -e "${{GRAY}}  -> Syncing packages from requirements.txt...${{NC}}"
-    "$VENV_PYTHON" -m pip install -r requirements.txt
-elif [ ${{#RESOLVED_PACKAGES[@]}} -gt 0 ]; then
-    echo -e "${{GRAY}}  -> Syncing resolved packages: {packages_display}...${{NC}}"
-    "$VENV_PYTHON" -m pip install "${{RESOLVED_PACKAGES[@]}}"
+if [ ${{#RESOLVED_PACKAGES[@]}} -gt 0 ]; then
+    echo -e "${{GRAY}}  Packages to install: {packages_display}${{NC}}"
+    if ! "$VENV_PIP" install "${{RESOLVED_PACKAGES[@]}}"; then
+        print_fail "pip install failed"
+    fi
+    print_success "All dependencies installed successfully"
 else
-    print_success "No external dependencies required."
+    print_success "No external dependencies required"
 fi
 
-print_success "Dependencies verified and synchronized in isolated environment."
-
 # ------------------------------------------------------------------------------
-# [6/7] VALIDATE PROJECT INTEGRITY
+# [7/7] VALIDATION & START APPLICATION
 # ------------------------------------------------------------------------------
-print_step 6 7 "Validating entry point and configuration"
+print_step 7 7 "Validating and launching project entry point (START APPLICATION)"
 
-ENTRY_FILE="{entry_file}"
-if [ ! -f "$ENTRY_FILE" ]; then
-    # Look for nested entry file
-    FOUND_FILE=$(find . -name "$ENTRY_FILE" -print -quit)
-    if [ -n "$FOUND_FILE" ]; then
-        ENTRY_FILE="$FOUND_FILE"
+TARGET_ENTRY="$PROJECT_DIR/{entry_file}"
+if [ ! -f "$TARGET_ENTRY" ]; then
+    FOUND_ENTRY=$(find "$PROJECT_DIR" -name "*.py" -not -path "*/.*" | head -n 1)
+    if [ -n "$FOUND_ENTRY" ]; then
+        TARGET_ENTRY="$FOUND_ENTRY"
+        print_warn "Default entry file not found, falling back to: $TARGET_ENTRY"
     else
-        print_fail "Entry point '$ENTRY_FILE' was not found in project directory."
+        print_fail "No runnable Python entry point found in $PROJECT_DIR"
     fi
 fi
 
-print_success "Entry point validated: $ENTRY_FILE"
+print_success "Entry point validated: $TARGET_ENTRY"
 
-# ------------------------------------------------------------------------------
-# [7/7] START APPLICATION
-# ------------------------------------------------------------------------------
-print_step 7 7 "Launching application"
 echo ""
 echo -e "${{GREEN}}============================================================${{NC}}"
-echo -e "  ${{GREEN}}Application is starting now!${{NC}}"
+echo -e "  [SUCCESS] Installation complete! Launching {plan.project_name}..."
 echo -e "${{GREEN}}============================================================${{NC}}"
 echo ""
 
+# Run project
 {run_cmd}
 """
-        return script

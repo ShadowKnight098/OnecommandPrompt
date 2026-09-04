@@ -127,6 +127,31 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
         'app.py': `import numpy as np\nimport pandas as pd\nimport cv2\nfrom PIL import Image\nimport math\n\ndef process():\n    arr = np.zeros((100, 100, 3), dtype=np.uint8)\n    print("Data science pipeline executed successfully!")\n\nif __name__ == "__main__":\n    process()\n`,
         'utils.py': `def helper():\n    return 42\n`,
       });
+    } else if (type === 'web') {
+      filename = 'html5-tailwind-app.zip';
+      zipData = await createSampleZip({
+        'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modern Tailwind Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-8">
+  <div class="max-w-3xl mx-auto space-y-4">
+    <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 shadow-xl">
+      <h1 class="text-2xl font-bold text-indigo-400">✨ One-Command Web Application</h1>
+      <p class="text-sm text-slate-400 mt-1">HTML5 + Tailwind CSS + Lucide Icons</p>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        'style.css': `body { font-family: system-ui, -apple-system, sans-serif; }\n`,
+        'app.js': `console.log("One-Command Web App initialized successfully!");\n`,
+      });
     } else if (type === 'ambiguous') {
       filename = 'multi-entrypoint-app.zip';
       zipData = await createSampleZip({
@@ -187,7 +212,7 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
           Drop your project folder or ZIP archive
         </h2>
         <p className="text-ink-600 font-sans text-sm max-w-md mx-auto mb-6 leading-relaxed">
-          Drop any normal Python project folder or <span className="font-mono text-ink-900 bg-ink-100 px-1 py-0.5 rounded text-xs">.zip</span>. We'll automatically detect dependencies, runtime version, and entry points.
+          Drop any Python, HTML/CSS, React, Vite, or Full-Stack project folder or <span className="font-mono text-ink-900 bg-ink-100 px-1 py-0.5 rounded text-xs">.zip</span>. We'll automatically detect dependencies, runtime requirements, and entry points.
         </p>
 
         {isPackagingFolder ? (
@@ -254,11 +279,11 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs text-ink-500 font-sans">
+          <span>Python & Web Projects</span>
+          <span>•</span>
           <span>Folder & ZIP Supported</span>
           <span>•</span>
           <span>Zip-Slip Protected</span>
-          <span>•</span>
-          <span>Isolated Static Analysis</span>
         </div>
       </div>
 
@@ -280,19 +305,34 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
           <span>Or test instantly with sample repositories:</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <button
             type="button"
             disabled={isUploading || isPackagingFolder}
             onClick={(e) => { e.stopPropagation(); loadSampleProject('fastapi'); }}
-            className="flex items-center gap-3 p-3 rounded-lg border border-ink-200 bg-ink-50/50 hover:bg-ink-100 hover:border-ink-300 text-left transition-all group disabled:opacity-50"
+            className="flex items-center gap-3 p-3 rounded-lg border border-ink-200 bg-ink-50/50 hover:bg-ink-100 hover:border-ink-300 text-left transition-all group disabled:opacity-50 cursor-pointer"
           >
             <div className="w-8 h-8 rounded-md bg-white border border-ink-200 text-ink-800 flex items-center justify-center shrink-0 shadow-paper-sm">
               <Code className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-ink-950 font-sans group-hover:text-accent-blue">FastAPI Project</p>
-              <p className="text-[11px] text-ink-500 font-mono">requirements.txt</p>
+              <p className="text-xs font-bold text-ink-950 font-sans group-hover:text-accent-blue">FastAPI Service</p>
+              <p className="text-[11px] text-ink-500 font-mono">Python API</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled={isUploading || isPackagingFolder}
+            onClick={(e) => { e.stopPropagation(); loadSampleProject('web'); }}
+            className="flex items-center gap-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/40 hover:bg-indigo-100 hover:border-indigo-300 text-left transition-all group disabled:opacity-50 cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-md bg-white border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0 shadow-paper-sm">
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-indigo-950 font-sans group-hover:text-indigo-800">HTML5 + Tailwind</p>
+              <p className="text-[11px] text-indigo-700 font-mono">Static Web App</p>
             </div>
           </button>
 
@@ -300,7 +340,7 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
             type="button"
             disabled={isUploading || isPackagingFolder}
             onClick={(e) => { e.stopPropagation(); loadSampleProject('inferred'); }}
-            className="flex items-center gap-3 p-3 rounded-lg border border-ink-200 bg-ink-50/50 hover:bg-ink-100 hover:border-ink-300 text-left transition-all group disabled:opacity-50"
+            className="flex items-center gap-3 p-3 rounded-lg border border-ink-200 bg-ink-50/50 hover:bg-ink-100 hover:border-ink-300 text-left transition-all group disabled:opacity-50 cursor-pointer"
           >
             <div className="w-8 h-8 rounded-md bg-white border border-ink-200 text-ink-800 flex items-center justify-center shrink-0 shadow-paper-sm">
               <Cpu className="w-4 h-4" />
@@ -315,13 +355,13 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
             type="button"
             disabled={isUploading || isPackagingFolder}
             onClick={(e) => { e.stopPropagation(); loadSampleProject('ambiguous'); }}
-            className="flex items-center gap-3 p-3 rounded-lg border border-ink-200 bg-ink-50/50 hover:bg-ink-100 hover:border-ink-300 text-left transition-all group disabled:opacity-50"
+            className="flex items-center gap-3 p-3 rounded-lg border border-ink-200 bg-ink-50/50 hover:bg-ink-100 hover:border-ink-300 text-left transition-all group disabled:opacity-50 cursor-pointer"
           >
             <div className="w-8 h-8 rounded-md bg-white border border-ink-200 text-ink-800 flex items-center justify-center shrink-0 shadow-paper-sm">
               <Layers className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-ink-950 font-sans group-hover:text-accent-blue">Multi-Entrypoint</p>
+              <p className="text-xs font-bold text-ink-950 font-sans group-hover:text-accent-blue">Multi-Entry</p>
               <p className="text-[11px] text-ink-500 font-mono">Ambiguity Test</p>
             </div>
           </button>
