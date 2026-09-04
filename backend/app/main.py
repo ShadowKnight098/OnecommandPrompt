@@ -23,6 +23,7 @@ if not allowed_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,6 +33,12 @@ app.add_middleware(
 app.include_router(upload_router)
 app.include_router(projects_router)
 app.include_router(installers_router)
+
+
+@app.get("/", tags=["system"])
+async def root():
+    """Root endpoint to verify backend service is online."""
+    return {"status": "ok", "service": "onecommand-installer-backend", "version": "1.0.0"}
 
 
 @app.get("/api/health", tags=["system"])
