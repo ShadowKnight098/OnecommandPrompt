@@ -26,7 +26,7 @@ export default function AnalysisCard({
   const hasSecurityWarnings = analysis.security_warnings && analysis.security_warnings.length > 0;
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white border border-ink-200 rounded-xl p-6 sm:p-8 shadow-paper-md">
+    <div className="w-full max-w-3xl mx-auto bg-white border border-ink-200 rounded-xl p-6 sm:p-8 shadow-paper-md animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-ink-200">
         <div className="flex items-center gap-3.5">

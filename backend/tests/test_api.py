@@ -67,3 +67,31 @@ def test_upload_folder_endpoint():
     assert data["id"] is not None
     assert data["analysis"]["entry_point"] == "main.py"
 
+
+def test_user_privacy_and_scoped_projects():
+    # 1. Upload private project for user_alpha
+    zip_bytes = create_sample_zip()
+    files = {"file": ("alpha-secret.zip", zip_bytes, "application/zip")}
+    data_form = {
+        "project_name": "alpha-secret",
+        "user_id": "user_alpha_123",
+        "user_email": "alpha@example.com",
+        "is_public": "false",
+    }
+    upload_res = client.post("/api/projects/upload", files=files, data=data_form)
+    assert upload_res.status_code == 201
+    record = upload_res.json()
+    assert record["user_id"] == "user_alpha_123"
+    assert record["is_public"] is False
+
+    # 2. Public showcase listing should not expose the private project to anonymous users
+    public_list = client.get("/api/projects").json()["projects"]
+    public_ids = [p["id"] for p in public_list]
+    assert record["id"] not in public_ids
+
+    # 3. User-scoped listing should return the user's private project
+    user_list = client.get(f"/api/projects?user_id=user_alpha_123").json()["projects"]
+    user_ids = [p["id"] for p in user_list]
+    assert record["id"] in user_ids
+
+

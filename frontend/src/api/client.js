@@ -47,6 +47,9 @@ export async function uploadProject(file, metadata = {}) {
     formData.append('file', file);
     if (metadata.projectName) formData.append('project_name', metadata.projectName);
     if (metadata.description) formData.append('description', metadata.description);
+    if (metadata.userId) formData.append('user_id', metadata.userId);
+    if (metadata.userEmail) formData.append('user_email', metadata.userEmail);
+    if (metadata.isPublic !== undefined) formData.append('is_public', String(metadata.isPublic));
 
     const response = await fetch(`${API_BASE}/api/projects/upload`, {
       method: 'POST',
@@ -87,11 +90,14 @@ export async function uploadFolder(files, metadata = {}) {
     }
 
     if (includedCount === 0) {
-      throw new Error('No Python source files found in the selected folder.');
+      throw new Error('No supported source files found in the selected folder.');
     }
 
     if (metadata.projectName) formData.append('project_name', metadata.projectName);
     if (metadata.description) formData.append('description', metadata.description);
+    if (metadata.userId) formData.append('user_id', metadata.userId);
+    if (metadata.userEmail) formData.append('user_email', metadata.userEmail);
+    if (metadata.isPublic !== undefined) formData.append('is_public', String(metadata.isPublic));
 
     const response = await fetch(`${API_BASE}/api/projects/upload-folder`, {
       method: 'POST',
@@ -115,8 +121,12 @@ export async function uploadFolder(files, metadata = {}) {
   }
 }
 
-export async function listProjects(limit = 20) {
-  const response = await fetch(`${API_BASE}/api/projects?limit=${limit}`);
+export async function listProjects(limit = 20, userId = null) {
+  const url = userId 
+    ? `${API_BASE}/api/projects?limit=${limit}&user_id=${encodeURIComponent(userId)}`
+    : `${API_BASE}/api/projects?limit=${limit}`;
+
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch projects list');
   }
@@ -175,3 +185,16 @@ export async function fetchScriptContent(url) {
   }
   return response.text();
 }
+
+export async function toggleProjectVisibility(projectId, isPublic) {
+  const response = await fetch(`${API_BASE}/api/projects/${projectId}/visibility`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_public: isPublic }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update project visibility');
+  }
+  return response.json();
+}
+

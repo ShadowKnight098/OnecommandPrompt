@@ -21,6 +21,9 @@ async def upload_project_zip(
     file: UploadFile = File(...),
     project_name: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    user_id: Optional[str] = Form(None),
+    user_email: Optional[str] = Form(None),
+    is_public: Optional[bool] = Form(True),
 ):
     """
     Accepts a ZIP file, checks security limits, safely extracts contents,
@@ -95,6 +98,9 @@ async def upload_project_zip(
             analysis=analysis,
             archive_path=archive_path_val,
             extracted_path=str(extracted_dest),
+            user_id=user_id,
+            user_email=user_email,
+            is_public=bool(is_public) if is_public is not None else True,
         )
         ProjectStore.save_project(record)
 
@@ -144,6 +150,9 @@ async def upload_project_folder(
     files: list[UploadFile] = File(...),
     project_name: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    user_id: Optional[str] = Form(None),
+    user_email: Optional[str] = Form(None),
+    is_public: Optional[bool] = Form(True),
 ):
     """
     Accepts raw multi-file folder uploads (with relative paths preserved in filenames),
@@ -224,6 +233,9 @@ async def upload_project_folder(
             analysis=analysis,
             archive_path=archive_path_val,
             extracted_path=str(extracted_dest),
+            user_id=user_id,
+            user_email=user_email,
+            is_public=bool(is_public) if is_public is not None else True,
         )
         ProjectStore.save_project(record)
 

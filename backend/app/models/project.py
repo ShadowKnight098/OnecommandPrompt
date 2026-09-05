@@ -82,6 +82,9 @@ class ProjectRecord(BaseModel):
     analysis: Optional[ProjectAnalysis] = None
     archive_path: str
     extracted_path: str
+    user_id: Optional[str] = None
+    user_email: Optional[str] = None
+    is_public: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

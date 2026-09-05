@@ -18,7 +18,7 @@ import {
 } from '../api/client';
 import { Terminal, Shield, Zap, Loader2, Plus, Sparkles } from 'lucide-react';
 
-export default function HomePage() {
+export default function HomePage({ initialProjectId, onNavigate }) {
   const [stage, setStage] = useState('upload'); // 'upload' | 'analyzing' | 'results' | 'command'
   const [analysisProgressStep, setAnalysisProgressStep] = useState(1);
   const [projectRecord, setProjectRecord] = useState(null);
@@ -33,14 +33,18 @@ export default function HomePage() {
   const [isDepsModalOpen, setIsDepsModalOpen] = useState(false);
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
 
-  // Check URL query param ?p=PROJECT_ID or ?project=PROJECT_ID on load
+  // Check URL query param ?p=PROJECT_ID or ?project=PROJECT_ID on load, or initialProjectId prop
   useEffect(() => {
+    if (initialProjectId) {
+      loadSharedProject(initialProjectId.trim());
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const sharedId = params.get('p') || params.get('project');
     if (sharedId) {
       loadSharedProject(sharedId.trim());
     }
-  }, []);
+  }, [initialProjectId]);
 
   const loadSharedProject = async (projectId) => {
     setIsLoadingShared(true);
@@ -174,7 +178,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col font-sans text-ink-900 relative">
-      <Navbar onReset={handleReset} hasProject={stage !== 'upload'} />
+      <Navbar onReset={handleReset} hasProject={stage !== 'upload'} currentPage="home" onNavigate={onNavigate} />
 
       {/* Floating Corner "+ New Project" Button */}
       {stage !== 'upload' && (

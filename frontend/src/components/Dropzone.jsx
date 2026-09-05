@@ -1,12 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FolderUp, FileArchive, ArrowRight, Sparkles, AlertCircle, Code, Cpu, Layers, Folder } from 'lucide-react';
+import { Upload, FolderUp, FileArchive, ArrowRight, Sparkles, AlertCircle, Code, Cpu, Layers, Folder, Shield, Lock, Globe } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Dropzone({ onFileSelected, isUploading, error }) {
+  const { user } = useAuth();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isPackagingFolder, setIsPackagingFolder] = useState(false);
   const [packagingStatus, setPackagingStatus] = useState('');
   const [customProjectName, setCustomProjectName] = useState('');
   const [customDescription, setCustomDescription] = useState('');
+  const [isPrivate, setIsPrivate] = useState(true);
   const [showDetailsForm, setShowDetailsForm] = useState(false);
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
@@ -14,6 +17,9 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
   const getMetadata = () => ({
     projectName: customProjectName.trim() || undefined,
     description: customDescription.trim() || undefined,
+    userId: user?.id || undefined,
+    userEmail: user?.email || undefined,
+    isPublic: user ? !isPrivate : true,
   });
 
   const handleDragOver = (e) => {
@@ -174,7 +180,7 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative rounded-xl p-8 sm:p-12 text-center transition-all bg-white border-2 border-dashed ${
+        className={`relative rounded-2xl p-5 sm:p-10 text-center transition-all bg-white border-2 border-dashed ${
           isDragOver
             ? 'border-ink-950 bg-ink-50 scale-[1.005] shadow-paper-md'
             : 'border-ink-300 hover:border-ink-400 hover:bg-ink-50/50 shadow-paper'
@@ -252,7 +258,7 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
           </button>
 
           {showDetailsForm && (
-            <div className="mt-3 space-y-2.5 p-3.5 bg-ink-50 rounded-xl border border-ink-200" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-3 space-y-3 p-3.5 bg-ink-50 rounded-xl border border-ink-200 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               <div>
                 <label className="block text-[11px] font-bold font-sans text-ink-900 mb-1">Project Name (Optional)</label>
                 <input
@@ -260,7 +266,7 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
                   placeholder="e.g. Speech AI Service"
                   value={customProjectName}
                   onChange={(e) => setCustomProjectName(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-white border border-ink-300 text-xs font-sans text-ink-950 focus:outline-none focus:border-ink-500"
+                  className="w-full px-3 py-1.5 rounded-lg bg-white border border-ink-300 text-xs font-sans text-ink-950 focus:outline-none focus:border-ink-500 transition-colors"
                 />
               </div>
 
@@ -271,8 +277,43 @@ export default function Dropzone({ onFileSelected, isUploading, error }) {
                   placeholder="e.g. Real-time voice modulation API built with FastAPI"
                   value={customDescription}
                   onChange={(e) => setCustomDescription(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-white border border-ink-300 text-xs font-sans text-ink-950 focus:outline-none focus:border-ink-500"
+                  className="w-full px-3 py-1.5 rounded-lg bg-white border border-ink-300 text-xs font-sans text-ink-950 focus:outline-none focus:border-ink-500 transition-colors"
                 />
+              </div>
+
+              {/* Privacy Setting */}
+              <div>
+                <label className="block text-[11px] font-bold font-sans text-ink-900 mb-1.5">Package Privacy</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivate(true)}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-medium font-sans transition-all cursor-pointer ${
+                      isPrivate
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Private Package</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivate(false)}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-medium font-sans transition-all cursor-pointer ${
+                      !isPrivate
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Public Showcase</span>
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500 font-sans mt-1">
+                  {isPrivate ? 'Only accessible by you when signed in.' : 'Visible in the community showcase repository library.'}
+                </p>
               </div>
             </div>
           )}

@@ -47,6 +47,9 @@ class ProjectStore:
                     "analysis": record.analysis.model_dump(mode="json") if record.analysis else None,
                     "archive_path": record.archive_path,
                     "extracted_path": record.extracted_path,
+                    "user_id": record.user_id,
+                    "user_email": record.user_email,
+                    "is_public": record.is_public,
                     "updated_at": datetime.now(timezone.utc).isoformat(),
                 }
                 supabase_client.table("projects").upsert(payload).execute()
@@ -78,6 +81,9 @@ class ProjectStore:
                         analysis=analysis_obj,
                         archive_path=row.get("archive_path", ""),
                         extracted_path=row.get("extracted_path", ""),
+                        user_id=row.get("user_id"),
+                        user_email=row.get("user_email"),
+                        is_public=row.get("is_public", True),
                     )
                     cls._memory_cache[project_id] = record
                     return record
@@ -97,14 +103,20 @@ class ProjectStore:
         return None
 
     @classmethod
-    def list_projects(cls, limit: int = 30) -> List[ProjectRecord]:
-        """Lists recently uploaded projects for the community showcase / marketplace."""
+    def list_projects(cls, limit: int = 30, user_id: Optional[str] = None) -> List[ProjectRecord]:
+        """Lists projects. If user_id is given, returns user's private & public projects; otherwise public projects."""
         projects: List[ProjectRecord] = []
 
         # 1. Fetch from Supabase
         if supabase_client:
             try:
-                res = supabase_client.table("projects").select("*").order("created_at", desc=True).limit(limit).execute()
+                query = supabase_client.table("projects").select("*")
+                if user_id:
+                    query = query.eq("user_id", user_id)
+                else:
+                    query = query.eq("is_public", True)
+                
+                res = query.order("created_at", desc=True).limit(limit).execute()
                 if res.data:
                     for row in res.data:
                         analysis_obj = None
@@ -123,6 +135,9 @@ class ProjectStore:
                             analysis=analysis_obj,
                             archive_path=row.get("archive_path", ""),
                             extracted_path=row.get("extracted_path", ""),
+                            user_id=row.get("user_id"),
+                            user_email=row.get("user_email"),
+                            is_public=row.get("is_public", True),
                         )
                         cls._memory_cache[rec.id] = rec
                         projects.append(rec)
@@ -133,7 +148,12 @@ class ProjectStore:
 
         # 2. Fallback to in-memory cache
         if cls._memory_cache:
-            return list(cls._memory_cache.values())[:limit]
+            filtered = list(cls._memory_cache.values())
+            if user_id:
+                filtered = [p for p in filtered if getattr(p, 'user_id', None) == user_id]
+            else:
+                filtered = [p for p in filtered if getattr(p, 'is_public', True)]
+            return filtered[:limit]
 
         # 3. Fallback to local storage disk
         if STORAGE_DIR.exists():

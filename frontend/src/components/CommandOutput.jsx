@@ -139,7 +139,7 @@ ${activeCommand}
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
+    <div className="w-full max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* Main Command Card */}
       <div className="bg-white border border-ink-200 rounded-xl p-6 sm:p-8 shadow-paper-md">
         {/* Header */}

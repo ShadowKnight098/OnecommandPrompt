@@ -23,23 +23,25 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
 @router.get("")
-async def list_projects(request: Request, limit: int = 30):
-    """Lists recent public projects for marketplace / community showcase."""
+async def list_projects(request: Request, limit: int = 30, user_id: str = None):
+    """Lists projects. Can be filtered by user_id for private dashboards or public for community showcase."""
     base_url = get_effective_base_url(request)
-    records = ProjectStore.list_projects(limit=limit)
+    records = ProjectStore.list_projects(limit=limit, user_id=user_id)
 
     return {
         "projects": [
             {
                 "id": p.id,
                 "project_name": (p.analysis and p.analysis.project_name) or p.original_filename.replace(".zip", ""),
-                "description": p.description or (p.analysis and p.analysis.description) or "Python project with automated bootstrap installer",
+                "description": p.description or (p.analysis and p.analysis.description) or "Automated bootstrap installer package",
                 "python_requirement": p.analysis.python_requirement if p.analysis else ">=3.10",
                 "entry_point": p.analysis.entry_point if p.analysis else "main.py",
                 "entry_point_framework": p.analysis.entry_point_framework if p.analysis else "python",
                 "dependencies_count": len([d for d in p.analysis.dependencies if d.enabled]) if p.analysis else 0,
                 "file_count": p.analysis.file_count if p.analysis else 0,
                 "total_size_bytes": p.analysis.total_size_bytes if p.analysis else 0,
+                "user_id": p.user_id,
+                "is_public": p.is_public,
                 "created_at": p.created_at.isoformat(),
                 "installer_commands": {
                     "windows": f"irm {base_url}/i/{p.id}.ps1 -OutFile install.ps1; .\\install.ps1",
@@ -238,3 +240,26 @@ async def download_project_archive(project_id: str):
         media_type="application/zip",
         filename=f"{record.analysis.project_name if record.analysis else project_id}.zip",
     )
+
+
+@router.post("/{project_id}/visibility")
+async def toggle_project_visibility(project_id: str, request: Request):
+    """Toggles or sets the public/private visibility status of a project."""
+    record = ProjectStore.get_project(project_id)
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    body = await request.json().catch(lambda: {}) if hasattr(request, "json") else {}
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    if "is_public" in data:
+        record.is_public = bool(data["is_public"])
+    else:
+        record.is_public = not getattr(record, "is_public", True)
+
+    ProjectStore.save_project(record)
+    return {"status": "success", "id": record.id, "is_public": record.is_public}
+
